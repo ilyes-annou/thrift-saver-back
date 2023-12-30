@@ -1,0 +1,86 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+
+const router = express.Router();
+router.use(bodyParser.json());
+const model = require("./model")
+
+
+const spendings = [
+  { id: 1, name: 'John Doe', age: 25 },
+  { id: 2, name: 'Jane Doe', age: 30 },
+];
+
+// Get all spendings
+router.get('/', async (req, res) => {
+  try {
+    const spendings = await SpendingModel.find();
+    res.json(spendings);
+    console.log("Success");
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Get a specific user by ID
+router.get('/:id', async (req, res) => {
+  const spendingId = req.params.id;
+  try {
+    const spending = await SpendingModel.findById(spendingId);
+    if (spending) {
+      res.json(spending);
+      console.log("Success");
+    } else {
+      res.status(404).json({ error: 'Spending not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Create a new spending
+router.post('/', async (req, res) => {
+  const newSpending = req.body;
+  try {
+    const createdSpending = await SpendingModel.create(newSpending);
+    res.status(201).json(createdSpending);
+    console.log("Success");
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Update a spending by ID
+router.put('/:id', async (req, res) => {
+  const spendingId = req.params.id;
+  const updateSpending = req.body;
+  try {
+    const updatedSpending = await SpendingModel.findByIdAndUpdate(spendingId, updateSpending, { new: true });
+    if (updatedSpending) {
+      res.json(updatedSpending);
+      console.log("Success");
+    } else {
+      res.status(404).json({ error: 'Spending not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+// Delete a spending by ID
+router.delete('/:id', async (req, res) => {
+  const spendingId = req.params.id;
+  try {
+    const deletedSpending = await SpendingModel.findByIdAndRemove(spendingId);
+    if (deletedSpending) {
+      res.json(deletedSpending);
+      console.log("Success");
+    } else {
+      res.status(404).json({ error: 'Spending not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+module.exports = router;
