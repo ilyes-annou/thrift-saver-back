@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const userRoutes = require("./services/user/controller");
+const spendingRoutes = require("./services/spending/controller");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -11,6 +12,7 @@ const mongoose= require("mongoose");
 const port= 3080;
 
 app.use("/", userRoutes);
+app.use("/", spendingRoutes);
 
 app.get("/", (req, res) => res.send("thrift-saver-api"));
 
