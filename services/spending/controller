@@ -1,92 +1,117 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
+const express= require('express');
+const authenticator= require('../authenticator');
+const router= express.Router();
+const SpendingModel= require("./model")
+const UserModel= require("../user/model")
 
-const router = express.Router();
-const SpendingModel = require("./model")
-const ObjectId = mongoose.Types.ObjectId;
-
-
-const spendings = [
-  { id: 1, name: 'John Doe', age: 25 },
-  { id: 2, name: 'Jane Doe', age: 30 },
-];
 
 // Get all spendings
-router.get('/spending/', async (req, res) => {
+// Admin
+// Update it to have all user's spendings
+router.get("/spending/", authenticator, async (req, res) => {
   try {
-    const spendings = await SpendingModel.find();
+    const spendings= await SpendingModel.find();
     res.json(spendings);
     console.log("Success");
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
-// Get a specific user by ID
-router.get('/spending/:id', async (req, res) => {
-  const spendingId = req.params.id;
+// Get a specific spending by ID
+// Login
+router.get("/spending/:id", authenticator, async (req, res) => {
+  const spendingId= req.params.id;
   try {
-    const spending = await SpendingModel.findById(spendingId);
+    const spending= await SpendingModel.findById(spendingId);
     if (spending) {
       res.json(spending);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'Spending not found' });
+    } 
+    else {
+      res.status(404).json({ error: "Spending not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Create a new spending
-router.post('/spending/', async (req, res) => {
-  const newSpending = req.body;
+// Login
+router.post("/spending/", authenticator, async (req, res) => {
+  const newSpending= req.body;
   try {
-    const createdSpending = await SpendingModel.create(newSpending);
+    const createdSpending= await SpendingModel.create(newSpending);
+
+    // Update the user's spendings list
+    await UserModel.findByIdAndUpdate(req.headers.id, { $push: { spendings: createdSpending._id } });
+
     res.status(201).json(createdSpending);
     console.log("Success");
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
-
 // Update a spending by ID
-router.put('/spending/:id', async (req, res) => {
-  const spendingId = req.params.id;
-  const updateSpending = req.body;
+// Login
+router.put("/spending/:id", authenticator, async (req, res) => {
+  const spendingId= req.params.id;
+  const updateSpending= req.body;
   try {
-    const updatedSpending = await SpendingModel.findByIdAndUpdate(spendingId, updateSpending, { new: true });
+    const updatedSpending= await SpendingModel.findOneAndUpdate(
+      { _id: spendingId, user: req.user._id },
+      updateSpending,
+      { new: true }
+    );
     if (updatedSpending) {
       res.json(updatedSpending);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'Spending not found' });
+    } 
+    else {
+      res.status(404).json({ error: "Spending not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Delete a spending by ID
-router.delete('/spending/:id', async (req, res) => {
-  const spendingId = req.params.id;
+// Login
+router.delete("/spending/:id", authenticator, async (req, res) => {
+  const spendingId= req.params.id;
   try {
-    const deletedSpending = await SpendingModel.findByIdAndDelete((spendingId));
+    const userId= req.headers.id;
+    
+    if (req.user.userId.toString() !== userId) {
+      console.log("Unauthorized");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const deletedSpending= await SpendingModel.findByIdAndDelete(spendingId);
+
     if (deletedSpending) {
+      await UserModel.findByIdAndUpdate(userId, { $pull: { spendings: spendingId } });
       res.json(deletedSpending);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'Spending not found' });
+    } 
+    else {
+      console.log("Spending not found");
+      res.status(404).json({ error: "Spending not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
-module.exports = router;
+
+module.exports= router;

@@ -1,6 +1,6 @@
-const mongoose = require('mongoose');
+const mongoose= require("mongoose");
 
-const spendingSchema = new mongoose.Schema({
+const spendingSchema= new mongoose.Schema({
     description: {
       type: String,
       required: true
@@ -15,6 +15,6 @@ const spendingSchema = new mongoose.Schema({
     }
   });
 
-const SpendingModel = mongoose.model('Spending', spendingSchema);
+const SpendingModel= mongoose.model("Spending", spendingSchema);
 
-module.exports = SpendingModel;
+module.exports= SpendingModel;

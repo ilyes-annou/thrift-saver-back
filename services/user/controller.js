@@ -1,90 +1,154 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const express= require('express');
+const jwt= require('jsonwebtoken');
+const authenticator= require('../authenticator');
+const router= express.Router();
+const UserModel= require("./model")
+const SpendingModel= require("../spending/model")
 
-const router = express.Router();
-const UserModel = require("./model")
-
-
-// test users
-const users = [
-  { id: 1, name: 'John Doe', age: 25 },
-  { id: 2, name: 'Jane Doe', age: 30 },
-];
 
 // Get all users
-router.get('/user/', async (req, res) => {
+//Only for admin
+router.get("/user/", async (req, res) => {
   try {
     const users= await UserModel.find();
     res.json(users);
     console.log("Success");
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch(error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+//Get all user's spendings
+// Login
+router.get("/user/:userId/spending", authenticator, async (req, res) => {
+  const userId= req.params.userId;
+
+  try {
+    console.log(req.body)
+    if (req.user && req.user.userId.toString() === userId) {
+      const spendings= await UserModel.findById(userId).populate('spendings');
+      res.json(spendings.spendings);
+    } 
+    else {
+      res.status(401).json({ error: "Unauthorized" });
+      console.log(req.body)
+    }
+  } 
+  catch(error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Get a specific user by ID
-router.get('/user/:id', async (req, res) => {
+//Admin only
+router.get("/user/:id", async (req, res) => {
   const userId= req.params.id;
   try {
     const user= await UserModel.findById(userId);
     if (user) {
       res.json(user);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'User not found' });
+    } 
+    else {
+      res.status(404).json({ error: "User not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch(error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Create a new user
-router.post('/user/', async (req, res) => {
+// Available for user
+router.post("/user/", async (req, res) => {
   const newUser= req.body;
   try {
-    const createdUser = await UserModel.create(newUser);
-    res.status(201).json(createdUser);
+    const existingUser= await UserModel.findOne({"email":newUser.email});
+    if(existingUser){
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    const newUser= await UserModel.create(newUser);
+    //await newUser.save();
+    res.status(201).json(newUser);
     console.log("Success");
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
-// Update a user by ID
-router.put('/user/:id', async (req, res) => {
-  const userId = req.params.id;
-  const updateUser = req.body;
+// Login
+// Available
+router.post("/login", async (req, res) => {
+  const { email, password }= req.body;
   try {
-    const updatedUser = await UserModel.findByIdAndUpdate(userId, updateUser, { new: true });
+    const user= await UserModel.findOne({"email":email});
+
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const token= jwt.sign({ userId: user._id }, process.env.SECRET_KEY || 'defaultSecretKey', { expiresIn: '1h' });
+    user.token= token;
+    await user.save();
+
+    res.json({ "token":token, "id":user._id });
+    console.log("Success");
+
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
+  }
+});
+
+
+
+// Update a user by ID
+// Login
+router.put("/user/:id", async (req, res) => {
+  const userId= req.params.id;
+  const updateUser= req.body;
+  try {
+    const updatedUser= await UserModel.findByIdAndUpdate(userId, updateUser, { new: true });
     if (updatedUser) {
       res.json(updatedUser);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'User not found' });
+    } 
+    else {
+      res.status(404).json({ error: "User not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  } 
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 
 // Delete a user by ID
-router.delete('/user/:id', async (req, res) => {
-  const userId = req.params.id;
+// Admin, but make anothrt one for user self delete
+router.delete("/user/:id", async (req, res) => {
+  const userId= req.params.id;
   try {
-    const deletedUser = await UserModel.findByIdAndDelete(userId);
+    const deletedUser= await UserModel.findByIdAndDelete(userId);
     if (deletedUser) {
       res.json(deletedUser);
       console.log("Success");
-    } else {
-      res.status(404).json({ error: 'User not found' });
+    } 
+    else {
+      res.status(404).json({ error: "User not found" });
     }
-  } catch (error) {
-    console.error('Error:', error.message);
-    res.status(500).json({ error: 'Internal Server Error' });
+  }
+  catch (error) {
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Server Error" });
   }
 });
 

@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const mongoose= require("mongoose");
+const bcrypt= require("bcrypt");
 
-const userSchema = new mongoose.Schema({
+const userSchema= new mongoose.Schema({
     email: {
       type: String,
       required: true,
+      unique: true
     },
     username: {
       type: String,
@@ -23,17 +24,29 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: false
     },
+    token: {
+      type: String,
+      required: false
+    },
+    spendings: [{ 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: "Spending" 
+    }]
 });
 
-userSchema.pre('save', async function (next) {
-    const user = this;
-    if(user.isModified('password')) {
-      const hash = await bcrypt.hash(user.password, 10);
-      user.password = hash;
+userSchema.pre("save", async function (next) {
+    const user= this;
+    if(user.isModified("password")) {
+      const digest= await bcrypt.hash(user.password, 10);
+      user.password= digest;
     }
     next();
 });
 
-const UserModel = mongoose.model('User', userSchema);
+userSchema.methods.comparePassword = async function (inputPassword) {
+  return bcrypt.compare(inputPassword, this.password);
+};
 
-module.exports = UserModel;
+const UserModel= mongoose.model("User", userSchema);
+
+module.exports= UserModel;
