@@ -4,6 +4,8 @@ const authenticator= require('../authenticator');
 const router= express.Router();
 const UserModel= require("./model")
 const SpendingModel= require("../spending/model")
+const bcrypt= require("bcrypt");
+
 
 
 // Get all users
@@ -99,7 +101,10 @@ router.post("/login", async (req, res) => {
     user.token= token;
     await user.save();
 
-    res.json({ "token":token, "id":user._id });
+    res.json({ 
+      "token":token, 
+      "id":user._id, 
+    });
     console.log("Success");
 
   } 
@@ -117,7 +122,23 @@ router.put("/user/:id", async (req, res) => {
   const userId= req.params.id;
   const updateUser= req.body;
   try {
-    const updatedUser= await UserModel.findByIdAndUpdate(userId, updateUser, { new: true });
+
+    if(updateUser.email){
+      const existingUser= await UserModel.findOne({ email: updateUser.email, _id: { $ne: userId } });
+      if (existingUser) {
+        return res.status(400).json({ error: "Email is already in use" });
+      }
+    }
+
+    const updateFields = {};
+    if (updateUser.email) {
+      updateFields.email = updateUser.email;
+    }
+    if (updateUser.password) {
+      updateFields.password = await bcrypt.hash(updateUser.password, 10);
+    }
+
+    const updatedUser= await UserModel.findByIdAndUpdate(userId, { $set: updateFields }, { new: true });
     if (updatedUser) {
       res.json(updatedUser);
       console.log("Success");
