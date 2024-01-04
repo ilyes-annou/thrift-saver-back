@@ -12,6 +12,11 @@ const spendingSchema= new mongoose.Schema({
     date: {
         type: Date,
         required: true
+    },
+    category: {
+      type: String,
+      enum: ["essential", "avoidable"],
+      required: true
     }
   });
 
