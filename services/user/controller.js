@@ -28,16 +28,23 @@ router.get("/user/:userId/spending", authenticator, async (req, res) => {
   const userId= req.params.userId;
 
   try {
-    console.log(req.body)
-    if (req.user && req.user.userId.toString() === userId) {
-      const spendings= await UserModel.findById(userId).populate('spendings');
-      res.json(spendings.spendings);
+
+    const user= await UserModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     } 
-    else {
-      res.status(401).json({ error: "Unauthorized" });
+    else{
       console.log(req.body)
-    }
-  } 
+      if (req.user && req.user.userId.toString() === userId) {
+        const spendings= await user.populate('spendings');
+        res.json(spendings.spendings);
+      } 
+      else {
+        return res.status(401).json({ error: "Unauthorized" });
+        console.log(req.body)
+      }
+    } 
+  }
   catch(error) {
     console.error("Error: ", error.message);
     res.status(500).json({ error: "Server Error" });
@@ -49,6 +56,9 @@ router.get("/user/:userId/spending", authenticator, async (req, res) => {
 router.get("/user/:id", async (req, res) => {
   const userId= req.params.id;
   try {
+    if(!userId || userId === ""){
+      return res.status(400).json({ error: "Bad request" });
+    }
     const user= await UserModel.findById(userId);
     if (user) {
       res.json(user);
@@ -68,17 +78,24 @@ router.get("/user/:id", async (req, res) => {
 // Available for user
 router.post("/user/", async (req, res) => {
   const receivedUser= req.body;
-  console.log("premier fait")
   try {
+
+    if(!req.body.email || req.body.email==="" || !req.body.password || req.body.password === ""){
+      return res.status(400).json({ error: "Bad Request" });
+    }
+    
     const existingUser= await UserModel.findOne({"email":receivedUser.email});
     if(existingUser){
-      return res.status(400).json({ error: "User already exists" });
+      return res.status(403).json({ error: "User already exists" });
     }
 
+    
+    
     const newUser= await UserModel.create(receivedUser);
     //await newUser.save();
     res.status(201).json(newUser);
     console.log("Success");
+  
 
   } 
   catch (error) {
@@ -94,8 +111,13 @@ router.post("/login", async (req, res) => {
   try {
     const user= await UserModel.findOne({"email":email});
 
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ error: "User not found" });
+    if(!email || email === "" || !password || password ===""){
+      return res.status(400).json({ error: "Bad request" });
+    }
+    console.log(email + " " + password);
+
+    if (!(await user.comparePassword(password)) || !user) {
+      return res.status(404).json({ error: "User not found" });
     }
 
     const token= jwt.sign({ userId: user._id }, process.env.SECRET_KEY || 'defaultSecretKey', { expiresIn: '1h' });

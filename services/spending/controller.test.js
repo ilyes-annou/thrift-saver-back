@@ -46,13 +46,23 @@ describe("Spending Service Endpoints", () => {
       .post("/spending/")
       .set("Authorization", authToken)
       .send({
-        // Provide your spending data here
         description: "Test spending",
         price :200,
-        date : "2024-01-10"
+        date : "2024-01-10",
+        category: "essential"
 
       })
       .expect(201);
+
+    expect(response.body.description).toBe("Test spending");
+    expect(response.body.price).toBe(200);
+  });
+
+  it("create empty spending", async () => {
+    const response = await request
+      .post("/spending/")
+      .set("Authorization", authToken)
+      .expect(400);
 
     expect(response.body.description).toBe("Test spending");
     expect(response.body.price).toBe(200);
@@ -62,12 +72,12 @@ describe("Spending Service Endpoints", () => {
     await request
       .post("/spending/")
       .set("Authorization", authToken)
-      .send({ description: "Spending 1", price: 100, date: "2024-01-01" });
+      .send({ description: "Spending 1", price: 100, date: "2024-01-01", category: "essential" });
 
     await request
       .post("/spending/")
       .set("Authorization", authToken)
-      .send({ description: "Spending 2", price: 200, date: "2024-01-02" });
+      .send({ description: "Spending 2", price: 200, date: "2024-01-02", category: "essential" });
 
     const response = await request
       .get("/spending/")

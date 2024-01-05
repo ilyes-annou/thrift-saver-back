@@ -2,6 +2,7 @@ const test = require("supertest");
 const express = require("express");
 const mongoose = require("mongoose");
 const router = require("./controller");
+const { ObjectId } = require("mongodb");
 
 const app = express();
 app.set('port', 3080);
@@ -38,6 +39,12 @@ describe("User API Endpoints", () => {
   let token; // To store the authentication token
   let userId;
 
+  it("create empty user", async () => {
+
+    const requestTest = request.post("/user");
+    const response = await requestTest.expect(400);
+    
+  });
 
   it("create new user", async () => {
 
@@ -45,6 +52,15 @@ describe("User API Endpoints", () => {
     const response = await requestTest.expect(201);
     expect(response.body.email).toBe(testUser.email);
   });
+
+  it("create same user", async () => {
+
+    const requestTest = request.post("/user").send(testUser);
+    const response = await requestTest.expect(403);
+    
+  });
+
+  
 
   it("login", async () => {
     const response = await request.post("/login")
@@ -59,6 +75,24 @@ describe("User API Endpoints", () => {
     expect(token).toBeTruthy();
   });
 
+
+  it("login no info", async () => {
+    const response = await request.post("/login")
+      .send({
+        email: "",
+        password: "",
+      })
+      .expect(400);
+  });
+
+  it("get empty spendings", async () => {
+    const response = await request.get("/user/"+userId+"/spending")
+      .set("Authorization", token)
+      .set("id",userId)
+      console.log(response)
+      expect(response.text).toBe("[]");
+  });
+
   it("update user", async () => {
     const updateUserResponse = await request.put("/user/"+userId)
       .set("Authorization", token)
@@ -68,6 +102,18 @@ describe("User API Endpoints", () => {
     expect(updateUserResponse.body.email).toBe(updatedUserData.email);
     //expect(updateUserResponse.body.password).toBeUndefined();
   });
+
+  it("update nonexistant user", async () => {
+    const idNull= new ObjectId(0);
+    const updateUserResponse = await request.put("/user/"+idNull)
+      .set("Authorization", token)
+      .send({ email: "nonexistant@example.com", password: "password1" })
+      .expect(404);
+
+  });
+
+
+  
 
   it("get all users", async () => {
     await request.post("/user/").send({ email: "user1@example.com", password: "password1" });
