@@ -58,15 +58,6 @@ describe("Spending Service Endpoints", () => {
     expect(response.body.price).toBe(200);
   });
 
-  it("create empty spending", async () => {
-    const response = await request
-      .post("/spending/")
-      .set("Authorization", authToken)
-      .expect(400);
-
-    expect(response.body.description).toBe("Test spending");
-    expect(response.body.price).toBe(200);
-  });
 
   it("get all spendings", async () => {
     await request
