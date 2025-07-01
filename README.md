@@ -5,7 +5,8 @@
 ## Installation
 
 To install this project on your computer, download or clone the repo and open it on VSCode.
-Run npm install
+npm install
+node app.js 
 
 
 ## Endpoints

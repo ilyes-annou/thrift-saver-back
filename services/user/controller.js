@@ -116,8 +116,12 @@ router.post("/login", async (req, res) => {
     }
     console.log(email + " " + password);
 
-    if (!(await user.comparePassword(password)) || !user) {
+    if(!user){
       return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!await user.comparePassword(password)) {
+      return res.status(404).json({ error: "Wrong password" });
     }
 
     const token= jwt.sign({ userId: user._id }, process.env.SECRET_KEY || 'defaultSecretKey', { expiresIn: '1h' });

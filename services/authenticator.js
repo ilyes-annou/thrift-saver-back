@@ -2,16 +2,24 @@ const jwt= require("jsonwebtoken");
 const UserModel= require("./user/model");
 
 const authenticator= async (req, res, next) => {
-  const token= req.headers["authorization"];
+  console.log("authenticating token")
+  const header= req.headers["authorization"];
 
-  if (!token) {
+  if (!header) {
     return res.status(401).json({ error: "Unauthorized: No Token" });
   }
+  
+  const token = header.split(' ')[1];
+  
+
 
   try {
+    console.log("A")
+    
     const decodedToken= jwt.verify(token, process.env.SECRET_KEY || "defaultSecretKey");
+    console.log("B");
     const user= await UserModel.findById(decodedToken.userId );
-
+    
     if (!user) {
       throw new Error();
     }
@@ -23,6 +31,7 @@ const authenticator= async (req, res, next) => {
     next();
   } 
   catch (error) {
+    console.error(error)
     return res.status(401).json({ error: "Unauthorized" });
   }
 };

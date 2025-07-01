@@ -49,6 +49,7 @@ router.post("/spending/", authenticator, async (req, res) => {
   const newSpending= req.body;
   try {
     const createdSpending= await SpendingModel.create(newSpending);
+    console.log(req.headers.id)
 
     // Update the user's spendings list
     await UserModel.findByIdAndUpdate(req.headers.id, { $push: { spendings: createdSpending._id } });

@@ -20,9 +20,9 @@ app.use(
       },
     })
 );
-// 100 requests per 15 minutes
+// 100 requests per 5 minutes
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, 
+    windowMs: 5 * 60 * 1000, 
     max: 100, 
 });
 app.use(limiter);
@@ -35,6 +35,7 @@ app.use("/", spendingRoutes);
 
 app.get("/", (req,res) => res.send("thrift-saver-api"));
 
+//DB connection
 mongoose.connect("mongodb://127.0.0.1:27017/thrift-saver-db", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
